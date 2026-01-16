@@ -7,6 +7,10 @@ from search import search
 
 app = Flask(__name__)
 
+@app.route('/')
+def index():
+    return "Hello"
+
 @app.get("/search")
 def main():
     query = request.args.get('query')
