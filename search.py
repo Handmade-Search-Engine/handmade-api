@@ -37,6 +37,6 @@ def search(query) -> list[str]:
                 final_results[url] = score
         
     final_results = dict(sorted(final_results.items(), key=lambda item: item[1], reverse=True))
-    final_results = list(final_results.items())[0:10]
+    final_results = list(final_results.items())
     
     return final_results
