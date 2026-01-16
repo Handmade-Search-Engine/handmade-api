@@ -1,8 +1,4 @@
 from flask import Flask, request, jsonify
-import sys
-
-sys.path.append('../')
-
 from search import search
 
 app = Flask(__name__)
@@ -21,5 +17,5 @@ def main():
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
-if __name__ == "__main__": 
-    app.run(debug=True, port=5555)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')
