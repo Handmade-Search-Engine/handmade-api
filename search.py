@@ -10,7 +10,7 @@ def search(query) -> list[str]:
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
 
-    keywords = nltk.WhitespaceTokenizer().tokenize(query)
+    keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
 
     final_results = {}
 
