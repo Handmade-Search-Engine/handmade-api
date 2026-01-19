@@ -74,11 +74,14 @@ def search(query) -> list[str]:
             url = site_data[site_id]['url']
 
             if (url in final_results):
-                final_results[url] += term_frequency * inverse_document_frequency
+                final_results[url]['score'] += term_frequency * inverse_document_frequency
             else:
-                final_results[url] = term_frequency * inverse_document_frequency
+                final_results[url] = {
+                    "score": term_frequency * inverse_document_frequency,
+                    "title": site_data[site_id]['title']
+                    }
         
-    final_results = dict(sorted(final_results.items(), key=lambda item: item[1], reverse=True))
+    final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
     final_results = list(final_results.items())
     
     return final_results
