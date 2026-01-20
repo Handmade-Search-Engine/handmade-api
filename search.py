@@ -2,6 +2,7 @@ import nltk
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 def search(query) -> list[str]:
     load_dotenv()
@@ -78,7 +79,8 @@ def search(query) -> list[str]:
             else:
                 final_results[url] = {
                     "score": term_frequency * inverse_document_frequency,
-                    "title": site_data[site_id]['title']
+                    "title": site_data[site_id]['title'],
+                    "hostname": urlparse(url).hostname
                     }
         
     final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
