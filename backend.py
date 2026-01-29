@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from search import search
+from search import or_search, and_search
 
 app = Flask(__name__)
 
@@ -11,7 +11,7 @@ def index():
 def main():
     query = request.args.get('query')
 
-    results = search(query)
+    results = and_search(query)
 
     response = jsonify({'results': results})
     response.headers.add('Access-Control-Allow-Origin', '*')

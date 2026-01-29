@@ -3,8 +3,107 @@ import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+from functools import reduce
 
-def search(query) -> list[str]:
+def and_search(query) -> list[dict]:
+    load_dotenv()
+    print(query)
+    url: str = os.environ.get("SUPABASE_URL")
+    key: str = os.environ.get("SUPABASE_KEY")
+    supabase: Client = create_client(url, key)
+
+    keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
+
+    middle_results = {}
+
+    response = (
+        supabase
+        .table("sites")
+        .select("*", count="exact", head=True)
+        .execute()
+    )
+    sites_count = response.count
+
+    for word in keywords:
+        middle_results[word] = {}
+        keyword_response = (
+            supabase
+            .table("keywords")
+            .select("*")
+            .eq("keyword", word)
+            .execute()
+        )
+
+        if len(keyword_response.data) == 0:
+            continue
+
+        document_frequency = keyword_response.data[0]['document_frequency']
+        keyword_id = keyword_response.data[0]['keyword_id']
+
+        postings_response = (
+            supabase.table('postings')
+            .select("*")
+            .eq("keyword_id", keyword_id)
+            .execute()
+        )
+
+        site_ids = []
+        for result in postings_response.data:
+            site_ids.append(result['site_id'])
+
+        sites_response = (
+            supabase.table('sites')
+            .select("*")
+            .in_("site_id", site_ids)
+            .execute()
+        )
+
+        site_data = {}
+        for site in sites_response.data:
+            site_data[site['site_id']] = site
+
+        for result in postings_response.data:
+            term_count = result['term_frequency']
+            site_id = result['site_id']
+
+            site_length = site_data[site_id]['doc_length']
+            term_frequency = term_count / site_length
+
+            inverse_document_frequency = sites_count / document_frequency
+
+            url = site_data[site_id]['url']
+
+            if (url in middle_results):
+                middle_results[word][url]['score'] += term_frequency * inverse_document_frequency
+            else:
+                middle_results[word][url] = {
+                    "score": term_frequency * inverse_document_frequency,
+                    "title": site_data[site_id]['title'],
+                    "hostname": urlparse(url).hostname
+                    }
+    
+    final_results = {}
+    overlap = list(reduce(lambda x, y: x & y.keys() , middle_results.values()))
+    for key in overlap:
+        final_results[key] = {
+            "score": 0,
+            "title": None,
+            "hostname": None
+        }
+
+        for word in middle_results.keys():
+            if middle_results[word][key]:
+                final_results[key]['score'] += middle_results[word][key]['score']
+                final_results[key]['title'] =middle_results[word][key]['title'] 
+                final_results[key]['hostname'] =middle_results[word][key]['hostname'] 
+            
+
+    final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
+    final_results = list(final_results.items())
+    
+    return final_results
+
+def or_search(query) -> list[str]:
     load_dotenv()
 
     url: str = os.environ.get("SUPABASE_URL")
