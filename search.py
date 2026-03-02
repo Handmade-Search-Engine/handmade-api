@@ -4,14 +4,24 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from functools import reduce
+import random
 
-def and_search(query) -> list[dict]:
+def get_supabase_client() -> Client:
     load_dotenv()
-    print(query)
     url: str = os.environ.get("SUPABASE_URL")
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
+    return supabase
 
+def get_random_site() -> str:
+    supabase: Client = get_supabase_client()
+    response = supabase.table("sites").select("url").execute().data
+    url = random.choice(response)
+    # IMPLEMENT RPC FUNCTION
+    return url
+
+def and_search(query) -> list[dict]:
+    supabase: Client = get_supabase_client()
     keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
 
     middle_results = {}
@@ -104,11 +114,7 @@ def and_search(query) -> list[dict]:
     return final_results
 
 def or_search(query) -> list[str]:
-    load_dotenv()
-
-    url: str = os.environ.get("SUPABASE_URL")
-    key: str = os.environ.get("SUPABASE_KEY")
-    supabase: Client = create_client(url, key)
+    supabase: Client = get_supabase_client() 
 
     keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
 

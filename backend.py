@@ -1,11 +1,17 @@
 from flask import Flask, request, jsonify
-from search import or_search, and_search
+from search import or_search, and_search, get_random_site
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     return "Hello"
+
+@app.route('/random')
+def random():
+    site = get_random_site()
+    print(site)
+    return site
 
 @app.get("/search")
 def main():
