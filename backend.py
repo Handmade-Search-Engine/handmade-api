@@ -10,7 +10,10 @@ def index():
 @app.route('/random')
 def random():
     site = get_random_site()
-    return jsonify({"url": site})
+    response = jsonify({"url": site})
+    print(response)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.get("/search")
 def main():
