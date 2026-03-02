@@ -10,8 +10,7 @@ def index():
 @app.route('/random')
 def random():
     site = get_random_site()
-    print(site)
-    return site
+    return jsonify({"url": site})
 
 @app.get("/search")
 def main():
