@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from functools import reduce
 import random
 from typing import Dict, List, Any
+import math
 
 def get_supabase_client() -> Client:
     load_dotenv()
@@ -79,7 +80,7 @@ def and_search(query) -> list[dict]:
             site_length = site_data[site_id]['doc_length']
             term_frequency = term_count / site_length
 
-            inverse_document_frequency = NUM_OF_SITES / document_frequency
+            inverse_document_frequency = math.log(NUM_OF_SITES / document_frequency)
 
             url = site_data[site_id]['url']
 
