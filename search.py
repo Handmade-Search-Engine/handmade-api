@@ -1,4 +1,5 @@
 import nltk
+from nltk.stem import *
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -24,6 +25,8 @@ def get_random_site() -> str:
 def and_search(query) -> list[dict]:
     supabase: Client = get_supabase_client()
     keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
+    stemmer = PorterStemmer()
+    keywords = [stemmer.stem(word) for word in keywords]
 
     middle_results = {}
     NUM_OF_SITES = (
