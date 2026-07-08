@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 from functools import reduce
 import random
+from typing import Dict, List, Any
 
 def get_supabase_client() -> Client:
     load_dotenv()
@@ -25,14 +26,12 @@ def and_search(query) -> list[dict]:
     keywords = nltk.WhitespaceTokenizer().tokenize(query.lower())
 
     middle_results = {}
-
-    response = (
-        supabase
-        .table("sites")
-        .select("*", count="exact", head=True)
-        .execute()
-    )
-    sites_count = response.count
+    NUM_OF_SITES = (
+            supabase
+            .table("sites")
+            .select("*", count="exact", head=True)
+            .execute()
+        ).count
 
     for word in keywords:
         middle_results[word] = {}
@@ -47,8 +46,8 @@ def and_search(query) -> list[dict]:
         if len(keyword_response.data) == 0:
             continue
 
-        document_frequency = keyword_response.data[0]['document_frequency']
-        keyword_id = keyword_response.data[0]['keyword_id']
+        document_frequency: int = keyword_response.data[0]['document_frequency']
+        keyword_id: int = keyword_response.data[0]['keyword_id']
 
         postings_response = (
             supabase.table('postings')
@@ -57,21 +56,19 @@ def and_search(query) -> list[dict]:
             .execute()
         )
 
-        site_ids = []
-        for result in postings_response.data:
-            site_ids.append(result['site_id'])
+        resulting_site_ids = [result['site_id'] for result in postings_response.data]
 
         sites_response = (
             supabase.table('sites')
             .select("*")
-            .in_("site_id", site_ids)
+            .in_("site_id", resulting_site_ids)
             .execute()
         )
 
-        site_data = {}
+        site_data: Dict[int, Any] = {}
         for site in sites_response.data:
             site_data[site['site_id']] = site
-
+        
         for result in postings_response.data:
             term_count = result['term_frequency']
             site_id = result['site_id']
@@ -79,7 +76,7 @@ def and_search(query) -> list[dict]:
             site_length = site_data[site_id]['doc_length']
             term_frequency = term_count / site_length
 
-            inverse_document_frequency = sites_count / document_frequency
+            inverse_document_frequency = NUM_OF_SITES / document_frequency
 
             url = site_data[site_id]['url']
 
@@ -110,8 +107,20 @@ def and_search(query) -> list[dict]:
 
     final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
     final_results = list(final_results.items())
+
+    hostname_sorted = {}
+
+    for item in final_results:
+        host = item[1]["hostname"]
+        if host in hostname_sorted:
+            hostname_sorted[host]['pages'].append(item)
+            hostname_sorted[host]['score'] += item[1]['score']
+        else:
+            hostname_sorted[host] = {}
+            hostname_sorted[host]['pages'] = [item]
+            hostname_sorted[host]['score'] = item[1]['score']
     
-    return final_results
+    return list(hostname_sorted.items())
 
 def or_search(query) -> list[str]:
     supabase: Client = get_supabase_client() 
