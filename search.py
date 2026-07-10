@@ -90,7 +90,8 @@ def and_search(query) -> list[dict]:
                 middle_results[word][url] = {
                     "score": term_frequency * inverse_document_frequency,
                     "title": site_data[site_id]['title'],
-                    "hostname": urlparse(url).hostname
+                    "hostname": urlparse(url).hostname,
+                    "path": urlparse(url).path
                     }
     
     final_results = {}
@@ -107,14 +108,17 @@ def and_search(query) -> list[dict]:
                 final_results[key]['score'] += middle_results[word][key]['score']
                 final_results[key]['title'] =middle_results[word][key]['title'] 
                 final_results[key]['hostname'] =middle_results[word][key]['hostname'] 
+                final_results[key]['path'] = middle_results[word][key]['path']
             
 
     final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
     final_results = list(final_results.items())
 
     hostname_sorted = {}
+    
 
     for item in final_results:
+        print(item)
         host = item[1]["hostname"]
         if host in hostname_sorted:
             hostname_sorted[host]['pages'].append(item)
@@ -123,6 +127,19 @@ def and_search(query) -> list[dict]:
             hostname_sorted[host] = {}
             hostname_sorted[host]['pages'] = [item]
             hostname_sorted[host]['score'] = item[1]['score']
+
+    hostname_links = [f"https://{hostname}" for hostname in hostname_sorted.keys()]
+    hostname_meta_response = (
+            supabase.table('sites')
+            .select("*")
+            .in_("url", hostname_links)
+            .execute()
+        )
+    
+    for response in hostname_meta_response.data:
+        hostname = response['url'][len("https://"):]
+        hostname_sorted[hostname]['title'] = response['title']
+        hostname_sorted[hostname]['description'] = response['description']
     
     return list(hostname_sorted.items())
 
@@ -198,7 +215,8 @@ def or_search(query) -> list[str]:
                 final_results[url] = {
                     "score": term_frequency * inverse_document_frequency,
                     "title": site_data[site_id]['title'],
-                    "hostname": urlparse(url).hostname
+                    "hostname": urlparse(url).hostname,
+                    "path": urlparse(url).path
                     }
         
     final_results = dict(sorted(final_results.items(), key=lambda item: item[1]['score'], reverse=True))
